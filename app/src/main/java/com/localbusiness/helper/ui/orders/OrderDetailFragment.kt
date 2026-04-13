@@ -56,6 +56,7 @@ class OrderDetailFragment : Fragment() {
     private fun bindOrder(order: Order) {
         requireActivity().title = "Order #${order.id}"
         binding.tvCustomerName.text = order.customerName
+        binding.tvProductSubtitle.text = order.product
         binding.tvProduct.text = order.product
         binding.tvQuantity.text = "Qty: ${order.quantity}"
         binding.tvPrice.text = "@ ${currency.format(order.price)}"
