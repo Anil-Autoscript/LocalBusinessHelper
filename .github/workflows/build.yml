@@ -51,10 +51,10 @@ jobs:
       - name: Bootstrap Gradle wrapper jar
         run: |
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            echo "Downloading gradle-wrapper.jar..."
-            curl -fL -o gradle/wrapper/gradle-wrapper.jar \
-              "https://services.gradle.org/distributions/gradle-8.4-wrapper.jar"
+            echo "gradle-wrapper.jar missing, regenerating via gradle CLI..."
+            gradle wrapper --gradle-version=8.4 --distribution-type=bin
           fi
+          echo "gradle-wrapper.jar ready" 
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace --no-daemon
@@ -95,10 +95,10 @@ jobs:
       - name: Bootstrap Gradle wrapper jar
         run: |
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            echo "Downloading gradle-wrapper.jar..."
-            curl -fL -o gradle/wrapper/gradle-wrapper.jar \
-              "https://services.gradle.org/distributions/gradle-8.4-wrapper.jar"
+            echo "gradle-wrapper.jar missing, regenerating via gradle CLI..."
+            gradle wrapper --gradle-version=8.4 --distribution-type=bin
           fi
+          echo "gradle-wrapper.jar ready" 
 
       - name: Decode release keystore
         env:
