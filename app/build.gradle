@@ -24,14 +24,15 @@ android {
         }
     }
 
-    signingConfigs {
-        release {
-            def keystoreFile = file("release.keystore")
-            if (keystoreFile.exists()) {
-                storeFile keystoreFile
+    // Only define signing config if the keystore file actually exists on disk
+    def keystoreFile = file("release.keystore")
+    if (keystoreFile.exists()) {
+        signingConfigs {
+            release {
+                storeFile     keystoreFile
                 storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias    System.getenv("KEY_ALIAS")           ?: ""
-                keyPassword System.getenv("KEY_PASSWORD")        ?: ""
+                keyAlias      System.getenv("KEY_ALIAS")         ?: ""
+                keyPassword   System.getenv("KEY_PASSWORD")      ?: ""
             }
         }
     }
@@ -46,8 +47,10 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // Always assign signingConfig — Gradle skips signing if storeFile is null
-            signingConfig signingConfigs.release
+            // Only apply signing config when keystore exists — otherwise leave unsigned
+            if (keystoreFile.exists()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
