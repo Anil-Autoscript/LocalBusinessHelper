@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import android.util.Log
 import androidx.work.*
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.localbusiness.helper.workers.SheetsSyncWorker
@@ -13,6 +14,7 @@ class LocalBusinessApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Init ThreeTenABP date library first
         AndroidThreeTen.init(this)
         createNotificationChannels()
         scheduleBackgroundSync()
@@ -20,9 +22,8 @@ class LocalBusinessApp : Application() {
 
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = getSystemService(NotificationManager::class.java)
+            val manager = getSystemService(NotificationManager::class.java) ?: return
 
-            // Follow-up reminders channel
             NotificationChannel(
                 CHANNEL_FOLLOWUP,
                 "Follow-up Reminders",
@@ -33,7 +34,6 @@ class LocalBusinessApp : Application() {
                 manager.createNotificationChannel(this)
             }
 
-            // Sync status channel
             NotificationChannel(
                 CHANNEL_SYNC,
                 "Sync Status",
@@ -46,24 +46,28 @@ class LocalBusinessApp : Application() {
     }
 
     private fun scheduleBackgroundSync() {
-        val syncRequest = PeriodicWorkRequestBuilder<SheetsSyncWorker>(
-            6, TimeUnit.HOURS,
-            30, TimeUnit.MINUTES
-        )
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
+        try {
+            val syncRequest = PeriodicWorkRequestBuilder<SheetsSyncWorker>(
+                6, TimeUnit.HOURS,
+                30, TimeUnit.MINUTES
             )
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
-            .addTag(TAG_SYNC)
-            .build()
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+                .addTag(TAG_SYNC)
+                .build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            WORK_SYNC,
-            ExistingPeriodicWorkPolicy.KEEP,
-            syncRequest
-        )
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                WORK_SYNC,
+                ExistingPeriodicWorkPolicy.KEEP,
+                syncRequest
+            )
+        } catch (e: Exception) {
+            Log.e("LocalBusinessApp", "Failed to schedule sync: ${e.message}")
+        }
     }
 
     companion object {
