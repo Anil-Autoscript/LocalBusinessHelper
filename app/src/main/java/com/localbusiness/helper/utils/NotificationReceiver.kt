@@ -13,10 +13,11 @@ import com.localbusiness.helper.R
 import com.localbusiness.helper.ui.MainActivity
 
 class NotificationReceiver : BroadcastReceiver() {
+
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED -> {
-                // Re-schedule all follow-up notifications on boot
+                // Re-schedule reminders after reboot if needed
             }
             ACTION_FOLLOWUP -> {
                 val orderId = intent.getLongExtra(EXTRA_ORDER_ID, -1L)
@@ -50,7 +51,7 @@ class NotificationReceiver : BroadcastReceiver() {
             .setContentText("$customerName – $product")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("Time to follow up with $customerName for order: $product")
+                    .bigText("Time to follow up with $customerName for: $product")
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -67,7 +68,15 @@ class NotificationReceiver : BroadcastReceiver() {
         const val EXTRA_CUSTOMER = "customer_name"
         const val EXTRA_PRODUCT = "product"
 
-        fun scheduleFollowUp(context: Context, orderId: Long, customerName: String, product: String, triggerTime: Long) {
+        fun scheduleFollowUp(
+            context: Context,
+            orderId: Long,
+            customerName: String,
+            product: String,
+            triggerTime: Long
+        ) {
+            if (triggerTime <= System.currentTimeMillis()) return
+
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
             val intent = Intent(context, NotificationReceiver::class.java).apply {
@@ -82,18 +91,19 @@ class NotificationReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            if (triggerTime > System.currentTimeMillis()) {
+            try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    try {
-                        alarmManager.setExactAndAllowWhileIdle(
-                            AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent
-                        )
-                    } catch (e: SecurityException) {
-                        alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-                    }
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent
+                    )
                 } else {
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                    alarmManager.setExact(
+                        AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent
+                    )
                 }
+            } catch (e: SecurityException) {
+                // Exact alarm permission not granted — fall back to inexact
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
             }
         }
 
