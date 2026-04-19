@@ -2,8 +2,6 @@ package com.localbusiness.helper.data.local
 
 import android.content.Context
 import androidx.room.*
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.localbusiness.helper.data.local.dao.CustomerDao
 import com.localbusiness.helper.data.local.dao.OrderDao
 import com.localbusiness.helper.data.local.entity.Customer
@@ -14,7 +12,7 @@ import com.localbusiness.helper.data.local.entity.PaymentStatus
 @Database(
     entities = [Customer::class, Order::class],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -46,11 +44,13 @@ class Converters {
     fun fromOrderStatus(value: OrderStatus): String = value.name
 
     @TypeConverter
-    fun toOrderStatus(value: String): OrderStatus = OrderStatus.valueOf(value)
+    fun toOrderStatus(value: String): OrderStatus =
+        try { OrderStatus.valueOf(value) } catch (e: Exception) { OrderStatus.PENDING }
 
     @TypeConverter
     fun fromPaymentStatus(value: PaymentStatus): String = value.name
 
     @TypeConverter
-    fun toPaymentStatus(value: String): PaymentStatus = PaymentStatus.valueOf(value)
+    fun toPaymentStatus(value: String): PaymentStatus =
+        try { PaymentStatus.valueOf(value) } catch (e: Exception) { PaymentStatus.UNPAID }
 }
